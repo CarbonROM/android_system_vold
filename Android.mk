@@ -120,6 +120,10 @@ LOCAL_C_INCLUDES := $(common_c_includes)
 LOCAL_CFLAGS := $(vold_cflags)
 LOCAL_CONLYFLAGS := $(vold_conlyflags)
 
+ifeq ($(TARGET_KERNEL_HAVE_EXFAT),true)
+LOCAL_CFLAGS += -DCONFIG_KERNEL_HAVE_EXFAT
+endif
+
 LOCAL_SHARED_LIBRARIES := $(common_shared_libraries)
 LOCAL_STATIC_LIBRARIES := libvold $(common_static_libraries)
 
