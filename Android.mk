@@ -85,6 +85,10 @@ common_static_libraries := \
 vold_conlyflags := -std=c11
 vold_cflags := -Werror -Wall -Wno-missing-field-initializers -Wno-unused-variable -Wno-unused-parameter
 
+ifeq ($(TARGET_KERNEL_HAVE_EXFAT),true)
+  vold_cflags += -DCONFIG_KERNEL_HAVE_EXFAT
+endif
+
 required_modules :=
 ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
   ifeq ($(TARGET_USES_MKE2FS), true)
@@ -100,10 +104,6 @@ ifeq ($(TARGET_HW_DISK_ENCRYPTION),true)
   common_c_includes += $(TARGET_CRYPTFS_HW_PATH)
   common_shared_libraries += libcryptfs_hw
   vold_cflags += -DCONFIG_HW_DISK_ENCRYPTION
-endif
-
-ifeq ($(TARGET_KERNEL_HAVE_EXFAT),true)
-  vold_cflags += -DCONFIG_KERNEL_HAVE_EXFAT
 endif
 
 ifeq ($(TARGET_KERNEL_HAVE_NTFS),true)
