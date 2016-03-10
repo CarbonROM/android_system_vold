@@ -44,6 +44,7 @@ common_c_includes := \
 	external/scrypt/lib/crypto \
 	frameworks/native/include \
 	system/security/keystore \
+	external/e2fsprogs/lib
 
 common_libraries := \
 	libsysutils \
