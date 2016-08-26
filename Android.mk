@@ -3,7 +3,6 @@ LOCAL_PATH:= $(call my-dir)
 mini_src_files := \
 	VolumeManager.cpp \
 	CommandListener.cpp \
-	CryptCommandListener.cpp \
 	VoldCommand.cpp \
 	NetlinkManager.cpp \
 	NetlinkHandler.cpp \
@@ -17,9 +16,7 @@ mini_src_files := \
 	Devmapper.cpp \
 	ResponseCode.cpp \
 	CheckBattery.cpp \
-	Ext4Crypt.cpp \
 	VoldUtil.c \
-	cryptfs.cpp \
 	Disk.cpp \
 	DiskPartition.cpp \
 	VolumeBase.cpp \
@@ -37,6 +34,10 @@ mini_src_files := \
 full_src_files := \
 	$(mini_src_files) \
 	Keymaster.cpp \
+	CryptCommandListener.cpp \
+	Ext4Crypt.cpp \
+	ScryptParameters.cpp \
+	cryptfs.cpp \
 	KeyStorage.cpp
 
 common_c_includes := \
@@ -116,7 +117,11 @@ include $(CLEAR_VARS)
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk
 LOCAL_MODULE := libvold
 LOCAL_CLANG := true
+<<<<<<< HEAD
 LOCAL_SRC_FILES := $(full_src_files)
+=======
+LOCAL_SRC_FILES := $(common_src_files) $(crypto_src_files)
+>>>>>>> 33919bf... vold: Don't include cryptfs in minivold
 LOCAL_C_INCLUDES := $(common_c_includes)
 LOCAL_SHARED_LIBRARIES := $(common_shared_libraries)
 LOCAL_STATIC_LIBRARIES := $(common_static_libraries)
