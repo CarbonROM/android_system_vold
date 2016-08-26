@@ -3,7 +3,6 @@ LOCAL_PATH:= $(call my-dir)
 mini_src_files := \
 	VolumeManager.cpp \
 	CommandListener.cpp \
-	CryptCommandListener.cpp \
 	VoldCommand.cpp \
 	NetlinkManager.cpp \
 	NetlinkHandler.cpp \
@@ -17,9 +16,7 @@ mini_src_files := \
 	Devmapper.cpp \
 	ResponseCode.cpp \
 	CheckBattery.cpp \
-	Ext4Crypt.cpp \
 	VoldUtil.c \
-	cryptfs.cpp \
 	Disk.cpp \
 	DiskPartition.cpp \
 	VolumeBase.cpp \
@@ -37,6 +34,10 @@ mini_src_files := \
 full_src_files := \
 	$(mini_src_files) \
 	Keymaster.cpp \
+	CryptCommandListener.cpp \
+	Ext4Crypt.cpp \
+	ScryptParameters.cpp \
+	cryptfs.cpp \
 	KeyStorage.cpp
 
 common_c_includes := \
