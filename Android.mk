@@ -37,7 +37,6 @@ full_src_files := \
 	CryptCommandListener.cpp \
 	Ext4Crypt.cpp \
 	ScryptParameters.cpp \
-	cryptfs.cpp \
 	KeyStorage.cpp
 
 common_c_includes := \
