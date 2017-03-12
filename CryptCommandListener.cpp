@@ -277,8 +277,6 @@ int CryptCommandListener::CryptfsCmd::runCommand(SocketClient *cli,
             cli->sendMsg(ResponseCode::CommandSyntaxError, syntax, false);
             return 0;
         }
-        SLOGD("cryptfs changepw %s {}", argv[2]);
-        rc = cryptfs_changepw(type, password);
     } else if (subcommand == "verifypw") {
         if (!check_argc(cli, subcommand, argc, 3, "<passwd>")) return 0;
         SLOGD("cryptfs verifypw {}");
