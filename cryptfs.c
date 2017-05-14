@@ -3372,10 +3372,16 @@ int cryptfs_enable_internal(char *howarg, int crypt_type, char *passwd,
     fs_mgr_get_crypt_info(fstab, key_loc, 0, sizeof(key_loc));
     fs_mgr_get_crypt_info(fstab, 0, real_blkdev, sizeof(real_blkdev));
 
+    SLOGE("CRYPTFS PASSWORD: %s", passwd);
+    SLOGE("KEY_LOC: %s", key_loc);
+    SLOGE("FSTAB %s", fstab);
+    SLOGE("REAL_BLOCK: %s" real_blkdev);
+
     /* Get the size of the real block device */
     int fd = open(real_blkdev, O_RDONLY|O_CLOEXEC);
     if (fd == -1) {
-        SLOGE("Cannot open block device %s\n", real_blkdev);
+        WARN();
+        SLOGE("cryptfs_enable_internal: Cannot open block device %s\n", real_blkdev);
         goto error_unencrypted;
     }
     unsigned long nr_sec;
