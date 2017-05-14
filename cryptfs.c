@@ -1271,8 +1271,8 @@ static int load_crypto_mapping_table(struct crypt_mnt_ftr *crypt_ftr,
            crypt_ftr->crypto_type_name, master_key_ascii,
            real_blk_name, extra_params);
 
-  SLOGI("target_type = %s", tgt->target_type);
-  SLOGI("real_blk_name = %s, extra_params = %s", real_blk_name, extra_params);
+  SLOGE("target_type = %s", tgt->target_type);
+  SLOGE("real_blk_name = %s, extra_params = %s", real_blk_name, extra_params);
 
   crypt_params += strlen(crypt_params) + 1;
   crypt_params = (char *) (((unsigned long)crypt_params + 7) & ~8); /* Align to an 8 byte boundary */
@@ -3372,10 +3372,14 @@ int cryptfs_enable_internal(char *howarg, int crypt_type, char *passwd,
     fs_mgr_get_crypt_info(fstab, key_loc, 0, sizeof(key_loc));
     fs_mgr_get_crypt_info(fstab, 0, real_blkdev, sizeof(real_blkdev));
 
+    SLOGE("CRYPTFS PASSWORD: %s", passwd);
+    SLOGE("KEY_LOC: %s", key_loc);
+    SLOGE("REAL_BLOCK: %s", real_blkdev);
+
     /* Get the size of the real block device */
     int fd = open(real_blkdev, O_RDONLY|O_CLOEXEC);
     if (fd == -1) {
-        SLOGE("Cannot open block device %s\n", real_blkdev);
+        SLOGE("cryptfs_enable_internal: Cannot open block device %s\n", real_blkdev);
         goto error_unencrypted;
     }
     unsigned long nr_sec;
