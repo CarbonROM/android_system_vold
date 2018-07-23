@@ -64,26 +64,36 @@ status_t Mount(const std::string& source, const std::string& target, bool ro,
 
     sprintf(mountData,
 #ifdef CONFIG_KERNEL_HAVE_EXFAT
-            "noatime,nodev,nosuid,uid=%d,gid=%d,fmask=%o,dmask=%o,%s,%s",
+            "uid=%d,gid=%d,fmask=%o,dmask=%o","
 #else
             "noatime,nodev,nosuid,dirsync,uid=%d,gid=%d,fmask=%o,dmask=%o,%s,%s",
 #endif
-            ownerUid, ownerGid, permMask, permMask,
+
+
+            ownerUid, ownerGid, permMask, permMask
+#ifndef CONFIG_EXFAT_DRIVER
+	,
             (executable ? "exec" : "noexec"),
-            (ro ? "ro" : "rw"));
+            (ro ? "ro" : "rw")
+#endif
+);
+
+#ifdef CONFIG_EXFAT_DRIVER
+	int rc;
+	unsigned long flags = MS_NODEV | MS_NOSUID | MS_DIRSYNC | MS_NOATIME;
+	rc = mount(c_source, c_target, "exfat", flags, mountData);
+	return rc;
+#else
 
     std::vector<std::string> cmd;
     cmd.push_back(kMountPath);
-#ifdef CONFIG_KERNEL_HAVE_EXFAT
-    cmd.push_back("-t");
-    cmd.push_back("exfat");
-#endif
     cmd.push_back("-o");
     cmd.push_back(mountData);
     cmd.push_back(c_source);
     cmd.push_back(c_target);
 
     return ForkExecvp(cmd, sFsckUntrustedContext);
+#endif
 }
 
 status_t Format(const std::string& source) {
