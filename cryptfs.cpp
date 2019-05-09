@@ -54,6 +54,7 @@
 #include "hardware_legacy/power.h"
 #include <logwrap/logwrap.h>
 #include "ScryptParameters.h"
+#include "Utils.h"
 #include "VolumeManager.h"
 #include "VoldUtil.h"
 #include "Ext4Crypt.h"
@@ -61,7 +62,9 @@
 #include "EncryptInplace.h"
 #include "Process.h"
 #include "Keymaster.h"
+#include "android-base/parseint.h"
 #include "android-base/properties.h"
+#include "android-base/stringprintf.h"
 #include <bootloader_message/bootloader_message.h>
 #ifdef CONFIG_HW_DISK_ENCRYPTION
 #include <cryptfs_hw.h>
@@ -69,6 +72,10 @@
 extern "C" {
 #include <crypto_scrypt.h>
 }
+
+using android::base::ParseUint;
+using android::base::StringPrintf;
+using namespace std::chrono_literals;
 
 #define UNUSED __attribute__((unused))
 
@@ -467,6 +474,10 @@ constexpr CryptoType default_crypto_type = CryptoType()
 
 constexpr CryptoType supported_crypto_types[] = {
     default_crypto_type,
+    CryptoType()
+        .set_property_name("adiantum")
+        .set_crypto_name("xchacha12,aes-adiantum-plain64")
+        .set_keysize(32),
     // Add new CryptoTypes here.  Order is not important.
 };
 
@@ -1152,7 +1163,10 @@ static int load_crypto_mapping_table(struct crypt_mnt_ftr *crypt_ftr,
   tgt->length = crypt_ftr->fs_size;
   crypt_params = buffer + sizeof(struct dm_ioctl) + sizeof(struct dm_target_spec);
   buff_offset = crypt_params - buffer;
-  SLOGI("Extra parameters for dm_crypt: %s\n", extra_params);
+  SLOGI(
+      "Creating crypto dev \"%s\"; cipher=%s, keysize=%u, real_dev=%s, len=%llu, params=\"%s\"\n",
+      name, crypt_ftr->crypto_type_name, crypt_ftr->keysize, real_blk_name, tgt->length * 512,
+      extra_params);
 
 #ifdef CONFIG_HW_DISK_ENCRYPTION
   if(is_hw_disk_encryption((char*)crypt_ftr->crypto_type_name)) {
@@ -1244,6 +1258,39 @@ static std::string extra_params_as_string(const std::vector<std::string>& extra_
         extra_params.append(p);
     }
     return extra_params;
+}
+
+/*
+ * If the ro.crypto.fde_sector_size system property is set, append the
+ * parameters to make dm-crypt use the specified crypto sector size and round
+ * the crypto device size down to a crypto sector boundary.
+ */
+static int add_sector_size_param(std::vector<std::string>* extra_params_vec,
+                                 struct crypt_mnt_ftr* ftr) {
+    constexpr char DM_CRYPT_SECTOR_SIZE[] = "ro.crypto.fde_sector_size";
+    char value[PROPERTY_VALUE_MAX];
+
+    if (property_get(DM_CRYPT_SECTOR_SIZE, value, "") > 0) {
+        unsigned int sector_size;
+
+        if (!ParseUint(value, &sector_size) || sector_size < 512 || sector_size > 4096 ||
+            (sector_size & (sector_size - 1)) != 0) {
+            SLOGE("Invalid value for %s: %s.  Must be >= 512, <= 4096, and a power of 2\n",
+                  DM_CRYPT_SECTOR_SIZE, value);
+            return -1;
+        }
+
+        std::string param = StringPrintf("sector_size:%u", sector_size);
+        extra_params_vec->push_back(std::move(param));
+
+        // With this option, IVs will match the sector numbering, instead
+        // of being hard-coded to being based on 512-byte sectors.
+        extra_params_vec->emplace_back("iv_large_sectors");
+
+        // Round the crypto device size down to a crypto sector boundary.
+        ftr->fs_size &= ~((sector_size / 512) - 1);
+    }
+    return 0;
 }
 #endif
 
@@ -1337,6 +1384,10 @@ static int create_crypto_blk_dev(struct crypt_mnt_ftr* crypt_ftr, const unsigned
     if (flags & CREATE_CRYPTO_BLK_DEV_FLAGS_ALLOW_ENCRYPT_OVERRIDE) {
         extra_params_vec.emplace_back("allow_encrypt_override");
     }
+    if (add_sector_size_param(&extra_params_vec, crypt_ftr)) {
+        SLOGE("Error processing dm-crypt sector size param\n");
+        goto errout;
+    }
     load_count = load_crypto_mapping_table(crypt_ftr, master_key, real_blk_name, name, fd,
                                            extra_params_as_string(extra_params_vec).c_str());
 #endif
@@ -1352,6 +1403,12 @@ static int create_crypto_blk_dev(struct crypt_mnt_ftr* crypt_ftr, const unsigned
 
     if (ioctl(fd, DM_DEV_SUSPEND, io)) {
         SLOGE("Cannot resume the dm-crypt device\n");
+        goto errout;
+    }
+
+    /* Ensure the dm device has been created before returning. */
+    if (android::vold::WaitForFile(crypto_blk_name, 1s) < 0) {
+        // WaitForFile generates a suitable log message
         goto errout;
     }
 
