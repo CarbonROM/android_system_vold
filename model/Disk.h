@@ -54,6 +54,8 @@ class Disk {
         kEmmc = 1 << 4,
         /* Flag that disk is non-removable */
         kNonRemovable = 1 << 5,
+        /* Flag that disk is UFS Card */
+        kUfsCard = 1 << 5,
     };
 
     const std::string& getId() const { return mId; }
